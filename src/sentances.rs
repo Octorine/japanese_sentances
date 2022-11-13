@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Sentance {
     pub en: String,
     pub jp: String,
