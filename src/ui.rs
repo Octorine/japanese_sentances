@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
 use iced::{
-    button::State, Application, Button, Color, Column, Container, Element, Error, Length, Padding,
-    Row, Rule, Sandbox, Settings, Text,
+    button, pick_list, Application, Button, Color, Column, Container, Element, Error, Length,
+    Padding, PickList, Row, Rule, Sandbox, Settings, Text,
 };
-use kanji::{level_table, Kanji, Level};
+use kanji::{level_table, Kanji, Level, Level::*};
 
 use crate::sentances::{self, Sentance};
 
@@ -13,9 +13,10 @@ pub struct JapaneseSentanceApp {
     pub sentances: Vec<crate::sentances::Sentance>,
     pub filtered_sentances: Vec<crate::sentances::Sentance>,
     pub current: usize,
-    pub button_state: State,
+    pub button_state: button::State,
     pub revealed: bool,
     pub level: kanji::Level,
+    pub pick_list_state: pick_list::State<Level>,
 }
 impl JapaneseSentanceApp {
     pub fn apply_filter(&mut self) {
@@ -27,7 +28,7 @@ impl JapaneseSentanceApp {
                 s.jp.chars()
                     .filter_map(Kanji::new)
                     .filter_map(|k| table.get(&k))
-                    .all(|l| l <= &self.level)
+                    .all(|l| l >= &self.level)
             })
             .cloned()
             .collect::<Vec<Sentance>>()
@@ -37,7 +38,7 @@ impl JapaneseSentanceApp {
 #[derive(Debug, Clone, Copy)]
 pub enum JapaneseSentanceAppMessage {
     RevealOrNext,
-    Quit,
+    PickedLevel(kanji::Level),
 }
 
 impl Default for JapaneseSentanceApp {
@@ -56,9 +57,10 @@ impl Sandbox for JapaneseSentanceApp {
             sentances,
             filtered_sentances: vec![],
             current: 0,
-            button_state: State::new(),
+            button_state: button::State::new(),
             revealed: false,
             level: kanji::Level::One,
+            pick_list_state: pick_list::State::new(),
         };
         app.apply_filter();
 
@@ -81,7 +83,10 @@ impl Sandbox for JapaneseSentanceApp {
                     self.revealed = !self.revealed
                 }
             }
-            JapaneseSentanceAppMessage::Quit => todo!(),
+            JapaneseSentanceAppMessage::PickedLevel(lvl) => {
+                self.level = lvl;
+                self.apply_filter()
+            }
         }
     }
 
@@ -95,7 +100,15 @@ impl Sandbox for JapaneseSentanceApp {
             }),
         );
         let controls = Column::new()
-            .push(Text::new("Right side").width(Length::Fill))
+            .push(Text::new("Level").width(Length::Fill))
+            .push(PickList::new(
+                &mut self.pick_list_state,
+                vec![
+                    PreOne, One, PreTwo, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten,
+                ],
+                Some(self.level),
+                |selection| JapaneseSentanceAppMessage::PickedLevel(selection),
+            ))
             .push(
                 Button::new(
                     &mut self.button_state,
