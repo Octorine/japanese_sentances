@@ -28,10 +28,14 @@ impl JapaneseSentanceApp {
                 s.jp.chars()
                     .filter_map(Kanji::new)
                     .filter_map(|k| table.get(&k))
-                    .all(|l| l >= &self.level)
+                    .all(|l| l <= &self.level)
             })
             .cloned()
-            .collect::<Vec<Sentance>>()
+            .collect::<Vec<Sentance>>();
+        self.pick_random_sentance()
+    }
+    pub fn pick_random_sentance(&mut self) {
+        self.current = rand::random::<usize>() % self.filtered_sentances.len()
     }
 }
 
@@ -59,13 +63,13 @@ impl Sandbox for JapaneseSentanceApp {
             current: 0,
             button_state: button::State::new(),
             revealed: false,
-            level: kanji::Level::One,
+            level: kanji::Level::Ten,
             pick_list_state: pick_list::State::new(),
         };
         app.apply_filter();
 
-        let count = app.filtered_sentances.len();
-        app.current = rand::random::<usize>() % count;
+        app.pick_random_sentance();
+
         app
     }
 
@@ -78,7 +82,7 @@ impl Sandbox for JapaneseSentanceApp {
             JapaneseSentanceAppMessage::RevealOrNext => {
                 if self.revealed {
                     self.revealed = !self.revealed;
-                    self.current = rand::random::<usize>() % self.filtered_sentances.len();
+                    self.pick_random_sentance()
                 } else {
                     self.revealed = !self.revealed
                 }
@@ -104,7 +108,7 @@ impl Sandbox for JapaneseSentanceApp {
             .push(PickList::new(
                 &mut self.pick_list_state,
                 vec![
-                    PreOne, One, PreTwo, Two, Three, Four, Five, Six, Seven, Eight, Nine, Ten,
+                    Ten, Nine, Eight, Seven, Six, Five, Four, Three, PreTwo, Two, PreOne, One,
                 ],
                 Some(self.level),
                 |selection| JapaneseSentanceAppMessage::PickedLevel(selection),
